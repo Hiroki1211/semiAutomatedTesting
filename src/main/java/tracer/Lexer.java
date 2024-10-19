@@ -157,6 +157,7 @@ public class Lexer {
 								addTrace.setSeqNum(seqNumLists.get(i));
 								addTrace.setThread(trace.getThread());
 								
+								
 								traceLists.add(addTrace);
 							}
 						}
@@ -222,6 +223,7 @@ public class Lexer {
 				mode = 2;
 				String trimBracket = trimBracket(splitContent[1]);
 				splitContent = splitContent(trimBracket);
+
 				if(splitContent.length > 1) {
 					splitContent[1] = trimRoundBracket(splitContent[1]);
 					
