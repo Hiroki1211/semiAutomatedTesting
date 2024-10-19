@@ -56,8 +56,90 @@ public class Executer {
 		
 		// 7. export result
 		executer.createExternalFile(naturalTestLists);
+		executer.createEx01ResultExternalFIle(breakDownTestClassLists);
 		executer.createEx02ResultExternalFile(resultLists);
 		executer.createEx03ResultExternalFile(resultLists);
+	}
+	
+	private void createEx01ResultExternalFIle(ArrayList<TestClass> breakDownTestClassLists) {
+		String directoryPathName = "src/test/java/naturalTest/";
+		File file = new File(directoryPathName + "ex01.txt");
+		file.setReadable(true);
+		file.setWritable(true);
+		
+		try {
+			FileWriter fw = new FileWriter(file);
+			
+			for(int classNum = 0; classNum < breakDownTestClassLists.size(); classNum++) {
+				TestClass breakDownTestClass = breakDownTestClassLists.get(classNum);
+				ArrayList<Test> testLists = breakDownTestClass.getTestLists();
+				ArrayList<TestMethod> methodLists = new ArrayList<TestMethod>();
+				
+				for(int testNum = 0; testNum < testLists.size(); testNum++) {
+					Test test = testLists.get(testNum);
+					ArrayList<TestMethod> testMethodLists = test.getMethodLists();
+					
+					for(int methodNum = 0; methodNum < testMethodLists.size(); methodNum++) {
+						TestMethod testMethod = testMethodLists.get(methodNum);
+						
+						if(methodLists.size() == 0) {
+							methodLists.add(testMethod);
+						}else {
+							boolean isContain = false;
+							for(int i = 0; i < methodLists.size(); i++) {
+								if(this.isSameTestMethod(testMethod, methodLists.get(i))) {
+									isContain = true;
+									break;
+								}
+							}
+							
+							if(!isContain) {
+								methodLists.add(testMethod);
+							}
+						}
+					}
+				}
+				
+				for(int methodNum = 0; methodNum < methodLists.size(); methodNum++) {
+					TestMethod testMethod = methodLists.get(methodNum);
+					
+					String addFw = breakDownTestClass.getClassName() + "\t" + testMethod.getMethodName() + "\t";
+					for(int argNum = 0; argNum < testMethod.getArgumentLists().size(); argNum++) {
+						addFw += testMethod.getArgumentLists().get(argNum) + "\t";
+					}
+					
+					fw.write(addFw + "\n");
+				}
+				
+			}
+			
+			fw.close();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private boolean isSameTestMethod(TestMethod testMethod1, TestMethod testMethod2) {
+		if(!testMethod1.getMethodName().equals(testMethod2.getMethodName())) {
+			return false;
+		}
+		
+		ArrayList<String> argumentLists1 = testMethod1.getArgumentLists();
+		ArrayList<String> argumentLists2 = testMethod2.getArgumentLists();
+		
+		if(argumentLists1.size() != argumentLists2.size()) {
+			return false;
+		}
+		
+		for(int argNum = 0; argNum < argumentLists1.size(); argNum++) {
+			if(!argumentLists1.get(argNum).equals(argumentLists2.get(argNum))) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	private void createEx03ResultExternalFile(ArrayList<Result> resultLists) {
