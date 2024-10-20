@@ -15,8 +15,10 @@ import tracer.ValueOption;
 public class BreakDownTestGenerater {
 	
 	private ArrayList<Trace> traceLists;
-	private static String inputTraceFileName = "src/main/resources/ex06/integrationTrace/Trace.json";
+	private static String inputTraceFileName = "trace.json";
 	private static String packageName = "breakDownTest";
+	private static String evoSuiteTracePath = "src/test/resources/EvoSuite/";
+	private static String breakDownTracePath = "src/test/resources/breakDown/";
 	
 	private ArrayList<String> excludeOwner = this.getExcludeOwner();
 
@@ -36,48 +38,55 @@ public class BreakDownTestGenerater {
 			ArrayList<AnalyzerMethod> analyzerMethodLists = analyzer.getMethodLists();
 			ArrayList<AnalyzerVariable> analyzerVariableLists = analyzer.getVariableLists();
 			executer.run(analyzerMethodLists, analyzerVariableLists);
+			executer.createTraceFolder();
 		}else {
 			System.out.println("code does not exist");
 		}
 	}
 	
+	private void createTraceFolder() {
+		File dir = new File(evoSuiteTracePath);
+		dir.mkdir();
+		dir = new File(breakDownTracePath);
+		dir.mkdir();
+	}
+	
 	public ArrayList<String> getAnalyzeFile(){
+		String path = "src/main/java/";
 		ArrayList<String> result = new ArrayList<String>();
-		result.add("src/main/resources/ex06/code/Human.java");
-		result.add("src/main/resources/ex06/code/Executer.java");
 		
-//		File dir = new File(path);
-//		File[] files = dir.listFiles();
-//		
-//		ArrayList<String> filePathLists = new ArrayList<String>();
-//		
-//		for(int i = 0; i < files.length; i++) {
-//			String filePath = files[i].getPath();
-//			
-//			if(!filePath.contains("trace.json")) {
-//				if(!filePath.contains(".java") && !filePath.contains(".class")) {
-//					filePathLists.add(filePath);
-//				}
-//			}
-//		}
-//		
-//		while(filePathLists.size() > 0) {
-//			File pathDir = new File(filePathLists.get(0));
-//			filePathLists.remove(0);
-//			
-//			File[] pathDirFiles = pathDir.listFiles();
-//			
-//			for(int i = 0; i < pathDirFiles.length; i++) {
-//				String pathFilePath = pathDirFiles[i].getPath();
-//				
-//				if(pathFilePath.contains(".java")) {
-//					result.add(pathFilePath);
-//				}else if(!pathFilePath.contains(".class")){
-//					filePathLists.add(pathFilePath);
-//				}
-//			}
-//			
-//		}
+		File dir = new File(path);
+		File[] files = dir.listFiles();
+		
+		ArrayList<String> filePathLists = new ArrayList<String>();
+		
+		for(int i = 0; i < files.length; i++) {
+			String filePath = files[i].getPath();
+			
+			if(!filePath.contains("trace.json")) {
+				if(!filePath.contains(".java") && !filePath.contains(".class")) {
+					filePathLists.add(filePath);
+				}
+			}
+		}
+		
+		while(filePathLists.size() > 0) {
+			File pathDir = new File(filePathLists.get(0));
+			filePathLists.remove(0);
+			
+			File[] pathDirFiles = pathDir.listFiles();
+			
+			for(int i = 0; i < pathDirFiles.length; i++) {
+				String pathFilePath = pathDirFiles[i].getPath();
+				
+				if(pathFilePath.contains(".java")) {
+					result.add(pathFilePath);
+				}else if(!pathFilePath.contains(".class")){
+					filePathLists.add(pathFilePath);
+				}
+			}
+			
+		}
 
 		return result;
 	}

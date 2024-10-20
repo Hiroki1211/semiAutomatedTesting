@@ -317,7 +317,7 @@ public class Executer {
 				// assertion
 				for(int evoTestAssertNum = 0; evoTestAssertNum < evoSuiteTestAssertionLists.size(); evoTestAssertNum++){
 					TestAssertion evoSuiteTestAssertion = evoSuiteTestAssertionLists.get(evoTestAssertNum);
-					TestAssertion naturalTestAssertion = this.createNaturalAssertion(evoSuiteTestAssertion, evoSuiteTestMethodLists, breakDownTestMethodLists, evoSuiteTest, breakDownTest, analyzer);
+					TestAssertion naturalTestAssertion = this.createNaturalAssertion(evoSuiteTestAssertion, evoSuiteTestMethodLists, breakDownTestMethodLists, evoSuiteTest, breakDownTest, analyzer, evoSuiteTestClass);
 					
 					addNaturalTest.addAssertionLists(naturalTestAssertion);
 				}
@@ -345,7 +345,7 @@ public class Executer {
 		return naturalTestLists;
 	}
 	
-	private TestAssertion createNaturalAssertion(TestAssertion evoSuiteTestAssertion, ArrayList<TestMethod> evoSuiteTestMethodLists, ArrayList<TestMethod> breakDownTestMethodLists, Test evoSuiteTest, Test breakDownTest, Analyzer analyzer) {
+	private TestAssertion createNaturalAssertion(TestAssertion evoSuiteTestAssertion, ArrayList<TestMethod> evoSuiteTestMethodLists, ArrayList<TestMethod> breakDownTestMethodLists, Test evoSuiteTest, Test breakDownTest, Analyzer analyzer, TestClass evoSuiteTestClass) {
 		ValueOption valueOption = null;
 		
 		if(!evoSuiteTestAssertion.getVariable().equals("")) {
@@ -355,19 +355,21 @@ public class Executer {
 					
 		}else {
 			String getterMethodInstance = evoSuiteTestAssertion.getGetterMethodInstance();
-			TestMethod targetInstanceCreateTestMethod = null;
+			int testMethodNum = 0;
 			
 			for(int evoTestMethodNum = 0; evoTestMethodNum < evoSuiteTestMethodLists.size(); evoTestMethodNum++) {
 				TestMethod evoSuiteTestMethod = evoSuiteTestMethodLists.get(evoTestMethodNum);
 				
 				if(evoSuiteTestMethod.getReturnVariable().equals(getterMethodInstance)) {
-					targetInstanceCreateTestMethod = breakDownTestMethodLists.get(evoTestMethodNum);
+					testMethodNum = evoTestMethodNum;
 					break;
 				}
 			}
 			
-			String instanceClass = targetInstanceCreateTestMethod.getConstructorClass();
-			TraceMethodBlock traceMethodBlock = evoSuiteTest.getTraceMethodBlock();
+			TestMethod targetInstanceCreateBreakDownTest = breakDownTestMethodLists.get(testMethodNum);
+			
+			String instanceClass = targetInstanceCreateBreakDownTest.getConstructorClass();
+			TraceMethodBlock traceMethodBlock = breakDownTest.getTraceMethodBlock();
 			ArrayList<Trace> traceLists = traceMethodBlock.getTraceLists();
 			
 			int initNum = 0;
@@ -402,26 +404,36 @@ public class Executer {
 			AnalyzerVariable analyzerVariable = null;
 			for(int analyzerVarNum = 0; analyzerVarNum < analyzerVariableLists.size(); analyzerVarNum++) {
 				analyzerVariable = analyzerVariableLists.get(analyzerVarNum);
-
-				if(analyzerVariable.getGetterMethod().getName().equals(getterMethodName) && analyzerVariable.getOwnerClass().getName().equals(getterMethodInstance)) {
+				if(analyzerVariable.getGetterMethod().getName().equals(getterMethodName) && analyzerVariable.getOwnerClass().getName().equals(evoSuiteTestClass.getClassName().replace("_ESTest", ""))) {
 					break;
 				}
 			}
+			
+//			System.out.println(getterMethodName);
+//			System.out.println(analyzerVariable.getGetterMethod().getName());
 			
 			PutInstanceVariable putInstanceVariable = null;
 			ArrayList<PutInstanceVariable> putInstanceVariableLists = breakDownTest.getPutInstanceVariableLists();
 			for(int putNum = putInstanceVariableLists.size() - 1; putNum > 0; putNum--) {
 				putInstanceVariable = putInstanceVariableLists.get(putNum);
 				
-				if(putInstanceVariable.getAnalyzerVariable().equals(analyzerVariable) && putInstanceVariable.getTargetInstanceValueOption().getId().equals(instanceId)) {
+				if(putInstanceVariable.getAnalyzerVariable().getName().equals(analyzerVariable.getName()) && putInstanceVariable.getTargetInstanceValueOption().getId().equals(instanceId)) {
 					break;
 				}
 			}
+			
+			
 			
 			valueOption = putInstanceVariable.getPutValueOption();
 		}
 		
 		String assertValue = valueOption.getValue();
+		if(!assertValue.contains("\"") && !assertValue.contains("'")) {
+			if(assertValue.contains(".")) {
+				assertValue += "f";
+			}
+		}
+		
 		String assertVariable = evoSuiteTestAssertion.getVariable();
 		String assertGetterMethodInstance = evoSuiteTestAssertion.getGetterMethodInstance();
 		String assertGetterMethodName = evoSuiteTestAssertion.getGetterMethodName();
@@ -663,42 +675,130 @@ public class Executer {
 	}
 	
 	private ArrayList<String> getInputFileNameLists(){
+		String path = "src/main/java/";
 		ArrayList<String> result = new ArrayList<String>();
-		result.add("src/main/resources/ex06/code/Human.java");
-		result.add("src/main/resources/ex06/code/Executer.java");
 		
+		File dir = new File(path);
+		File[] files = dir.listFiles();
+		
+		ArrayList<String> filePathLists = new ArrayList<String>();
+		
+		for(int i = 0; i < files.length; i++) {
+			String filePath = files[i].getPath();
+			
+			if(!filePath.contains(".java") && !filePath.contains(".class")) {
+				filePathLists.add(filePath);
+			}
+		}
+		
+		while(filePathLists.size() > 0) {
+			File pathDir = new File(filePathLists.get(0));
+			filePathLists.remove(0);
+			
+			File[] pathDirFiles = pathDir.listFiles();
+			
+			for(int i = 0; i < pathDirFiles.length; i++) {
+				String pathFilePath = pathDirFiles[i].getPath();
+				
+				if(pathFilePath.contains(".java")) {
+					result.add(pathFilePath);
+				}else if(!pathFilePath.contains(".class")){
+					filePathLists.add(pathFilePath);
+				}
+			}
+			
+		}
+
 		return result;
 	}
 	
 	private ArrayList<String> getInputEvoSuiteTestFileNameLists(){
+		String path = "src/test/java/";
 		ArrayList<String> result = new ArrayList<String>();
-		result.add("src/main/resources/ex06/evoSuiteTest/Human_ESTest.java");
-		result.add("src/main/resources/ex06/evoSuiteTest/Executer_ESTest.java");
 		
+		File dir = new File(path);
+		File[] files = dir.listFiles();
+		
+		ArrayList<String> filePathLists = new ArrayList<String>();
+		
+		for(int i = 0; i < files.length; i++) {
+			String filePath = files[i].getPath();
+			
+			if(!filePath.contains(".java") && !filePath.contains(".class")) {
+				filePathLists.add(filePath);
+			}
+		}
+		
+		while(filePathLists.size() > 0) {
+			File pathDir = new File(filePathLists.get(0));
+			filePathLists.remove(0);
+			
+			File[] pathDirFiles = pathDir.listFiles();
+			
+			if(pathDirFiles != null) {
+				for(int i = 0; i < pathDirFiles.length; i++) {
+					String pathFilePath = pathDirFiles[i].getPath();
+					
+					if(pathFilePath.contains("_ESTest.java")) {
+						result.add(pathFilePath);
+					}else if(!pathFilePath.contains(".class")){
+						filePathLists.add(pathFilePath);
+					}
+				}
+			}
+		}
+
 		return result;
 	}
 	
 	private ArrayList<String> getInputEvoSuiteTestTraceFileNameLists(){
+		String path = "src/test/resources/EvoSuite/";
 		ArrayList<String> result = new ArrayList<String>();
-		result.add("src/main/resources/ex06/evoSuiteTrace/Human_ESTest.json");
-		result.add("src/main/resources/ex06/evoSuiteTrace/Executer_ESTest.json");
 		
+		File dir = new File(path);
+		File[] files = dir.listFiles();
+		for(int i = 0; i < files.length; i++) {
+			String pathFilePath = files[i].getPath();
+			
+			if(pathFilePath.contains(".json")) {
+				result.add(pathFilePath);
+			}
+		}
+
 		return result;
 	}
 	
 	private ArrayList<String> getInputBreakDownTestFileNameLists(){
+		String path = "src/test/java/breakDownTest/";
 		ArrayList<String> result = new ArrayList<String>();
-		result.add("src/main/resources/ex06/breakDownTest/Human_Test.java");
-		result.add("src/main/resources/ex06/breakDownTest/Executer_Test.java");
 		
+		File dir = new File(path);
+		File[] files = dir.listFiles();
+		for(int i = 0; i < files.length; i++) {
+			String pathFilePath = files[i].getPath();
+			
+			if(pathFilePath.contains(".java")) {
+				result.add(pathFilePath);
+			}
+		}
+
 		return result;
 	}
 	
 	private ArrayList<String> getInputBreakDownTestTraceFileNameLists(){
+		String path = "src/test/resources/breakDown/";
 		ArrayList<String> result = new ArrayList<String>();
-		result.add("src/main/resources/ex06/breakDownTestTrace/Human_Test.json");
-		result.add("src/main/resources/ex06/breakDownTestTrace/Executer_Test.json");
 		
+		File dir = new File(path);
+		File[] files = dir.listFiles();
+		for(int i = 0; i < files.length; i++) {
+			String pathFilePath = files[i].getPath();
+			
+			if(pathFilePath.contains(".json")) {
+				result.add(pathFilePath);
+			}
+		}
+
 		return result;
 	}
 }
